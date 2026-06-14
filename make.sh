@@ -1,1 +1,1 @@
-clear && unset WORKSPACE EDK_TOOLS_PATH CONF_PATH PACKAGES_PATH PYTHONPATH && make -C BaseTools && mkdir -p Conf && . edksetup.sh BaseTools && GCC5_AARCH64_PREFIX=aarch64-linux-gnu- build -a AARCH64 -t GCC5 -b RELEASE -p ArmVirtPkg/ArmVirtGzvm.dsc
+clear && unset WORKSPACE EDK_TOOLS_PATH CONF_PATH PACKAGES_PATH PYTHONPATH && git submodule update --init --recursive && make -C BaseTools && mkdir -p Conf && . edksetup.sh BaseTools && GCC5_AARCH64_PREFIX=aarch64-linux-gnu- build -a AARCH64 -t GCC5 -b RELEASE -p ArmVirtPkg/ArmVirtGzvm.dsc

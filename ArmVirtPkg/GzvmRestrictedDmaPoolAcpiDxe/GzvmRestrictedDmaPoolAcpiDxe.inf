@@ -24,6 +24,7 @@
 [LibraryClasses]
   AmlLib
   BaseLib
+  FdtLib
   BaseMemoryLib
   DebugLib
   MemoryAllocationLib

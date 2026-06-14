@@ -22,7 +22,7 @@ ASM_FUNC(_ModuleEntryPoint)
   //
   // Diagnostic breadcrumbs: write letters to PL011 to trace execution
   //
-  mov   x15, #0x09000000    // PL011 base (kept in x15 for reuse)
+  mov   x15, #0x09000000    // PL011 base (kept in x15 for reuse; QEMU virt fixed address)
 
   mov   w16, #'a'           // 'a' = VBAR set, starting DTB check
   str   w16, [x15]

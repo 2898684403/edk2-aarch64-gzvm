@@ -10,5 +10,5 @@ tags/
 .venv/
 .vscode/
 
-# Build logs
-[0-9]*
+# Build logs (numeric single files, not dirs like 16550)
+[0-9]

@@ -1015,14 +1015,16 @@ Virtio10BindingSupported (
 
   Status = EFI_UNSUPPORTED;
   //
-  // Recognize non-transitional modern devices. Also, we'll have to parse the
-  // PCI capability list, so make sure the CapabilityPtr field will be valid.
+  // Recognize transitional and non-transitional modern devices.
+  // Transitional virtio-pci devices (DeviceId 0x1000-0x103F) expose both
+  // legacy and modern interfaces.  Non-transitional (modern-only) devices
+  // use DeviceId 0x1040-0x107F.  We can bind to either as long as the PCI
+  // capability list contains VirtIo 1.0 vendor capabilities (checked later
+  // in ParseCapabilities).
   //
   if ((Pci.Hdr.VendorId == VIRTIO_VENDOR_ID) &&
-      (Pci.Hdr.DeviceId >= 0x1040) &&
+      (Pci.Hdr.DeviceId >= 0x1000) &&
       (Pci.Hdr.DeviceId <= 0x107F) &&
-      (Pci.Hdr.RevisionID >= 0x01) &&
-      (Pci.Device.SubsystemID >= 0x40) &&
       ((Pci.Hdr.Status & EFI_PCI_STATUS_CAPABILITY) != 0))
   {
     //
@@ -1097,10 +1099,28 @@ Virtio10BindingStart (
     goto ClosePciIo;
   }
 
-  Device->VirtIo.SubSystemDeviceId = Pci.Hdr.DeviceId - 0x1040;
+  //
+  // Calculate the VirtIo subsystem (device type) ID.
+  // Transitional devices: DeviceId = 0x1000 + type
+  // Non-transitional devices: DeviceId = 0x1040 + type
+  //
+  if (Pci.Hdr.DeviceId >= 0x1040) {
+    Device->VirtIo.SubSystemDeviceId = Pci.Hdr.DeviceId - 0x1040;
+  } else {
+    Device->VirtIo.SubSystemDeviceId = Pci.Hdr.DeviceId - 0x1000;
+  }
 
   Status = ParseCapabilities (Device);
   if (EFI_ERROR (Status)) {
+    goto ClosePciIo;
+  }
+
+  //
+  // Reject devices without Valid VirtIo 1.0 Common Config capability.
+  // (Legacy-only devices have no VirtIo 1.0 vendor capabilities.)
+  //
+  if (!Device->CommonConfig.Exists) {
+    Status = EFI_UNSUPPORTED;
     goto ClosePciIo;
   }
 
@@ -1221,7 +1241,7 @@ STATIC EFI_DRIVER_BINDING_PROTOCOL  mDriverBinding = {
   &Virtio10BindingSupported,
   &Virtio10BindingStart,
   &Virtio10BindingStop,
-  0x10, // Version
+  0x20, // Version
   NULL, // ImageHandle, to be overwritten
   NULL  // DriverBindingHandle, to be overwritten
 };

@@ -13,6 +13,7 @@
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
+#include <Library/FdtLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 
@@ -62,8 +63,8 @@ GetRestrictedDmaPool (
     return EFI_NOT_FOUND;
   }
 
-  Address = SwapBytes64 (((CONST UINT64 *)Prop)[0]);
-  Size    = SwapBytes64 (((CONST UINT64 *)Prop)[1]);
+  Address = Fdt64ToCpu (ReadUnaligned64 ((CONST UINT64 *)Prop));
+  Size    = Fdt64ToCpu (ReadUnaligned64 ((CONST UINT64 *)Prop + 1));
 
   if ((Address == 0) || (Size == 0)) {
     return EFI_NOT_FOUND;

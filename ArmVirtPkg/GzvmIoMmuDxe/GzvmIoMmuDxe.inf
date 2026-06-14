@@ -42,6 +42,7 @@
   HobLib
   MemoryAllocationLib
   PcdLib
+  SynchronizationLib
 
 [Protocols]
   gEdkiiIoMmuProtocolGuid        ## PRODUCES

@@ -27,6 +27,7 @@
 #include <Library/FdtLib.h>
 #include <Library/HobLib.h>
 #include <Library/PcdLib.h>
+#include <Library/SynchronizationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Protocol/IoMmu.h>
 
@@ -50,6 +51,11 @@ STATIC UINTN                 mSharePages;
 // Dynamically allocated based on the actual shared DMA pool size.
 //
 STATIC UINT8  *mBitmap;
+
+//
+// Lock to serialise access to the bitmap allocator.
+//
+STATIC SPIN_LOCK  mSharePoolLock;
 
 //
 // MAP_INFO tracks an active DMA mapping for Unmap().
@@ -90,6 +96,8 @@ SharePoolAllocatePages (
     return 0;
   }
 
+  AcquireSpinLock (&mSharePoolLock);
+
   //
   // First-fit search.
   //
@@ -99,7 +107,6 @@ SharePoolAllocatePages (
     for (j = 0; j < Pages; j++) {
       if (mBitmap[(i + j) / 8] & (1U << ((i + j) % 8))) {
         Found = FALSE;
-        i    += j;   // skip ahead past this occupied page
         break;
       }
     }
@@ -108,6 +115,8 @@ SharePoolAllocatePages (
       for (j = 0; j < Pages; j++) {
         mBitmap[(i + j) / 8] |= (1U << ((i + j) % 8));
       }
+
+      ReleaseSpinLock (&mSharePoolLock);
 
       DEBUG ((
         DEBUG_VERBOSE,
@@ -119,6 +128,7 @@ SharePoolAllocatePages (
     }
   }
 
+  ReleaseSpinLock (&mSharePoolLock);
   DEBUG ((DEBUG_ERROR, "GZVM-IoMmu: pool exhausted (wanted %u pages)\n", (UINT32)Pages));
   return 0;
 }
@@ -146,11 +156,19 @@ SharePoolFreePages (
     return;
   }
 
+  if (Pages == 0) {
+    return;
+  }
+
   Start = (UINTN)((Address - mShareBase) / EFI_PAGE_SIZE);
+
+  AcquireSpinLock (&mSharePoolLock);
 
   for (j = 0; j < Pages; j++) {
     mBitmap[(Start + j) / 8] &= ~(1U << ((Start + j) % 8));
   }
+
+  ReleaseSpinLock (&mSharePoolLock);
 
   DEBUG ((
     DEBUG_VERBOSE,
@@ -365,7 +383,6 @@ GzvmIoMmuUnmap (
       ));
   }
 
-  ZeroMem (MapInfo, sizeof *MapInfo);
   FreePool (MapInfo);
   return EFI_SUCCESS;
 }
@@ -528,6 +545,7 @@ GzvmIoMmuDxeEntryPoint (
   //
   BitmapBytes = (mSharePages + 7) / 8;
   mBitmap = AllocateZeroPool (BitmapBytes);
+  InitializeSpinLock (&mSharePoolLock);
   if (mBitmap == NULL) {
     DEBUG ((DEBUG_ERROR, "GZVM-IoMmu: failed to allocate bitmap (%u bytes)\n", (UINT32)BitmapBytes));
     return EFI_OUT_OF_RESOURCES;
