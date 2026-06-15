@@ -22,12 +22,12 @@
 
 [Defines]
 !if $(FD_SIZE_IN_MB) == 2
-  # FD = 2MB = 0x200000; DTB header = 0x20000; FVMAIN_COMPACT = 0x200000 - 0x20000
-  DEFINE FVMAIN_COMPACT_SIZE  = 0x1e0000
+  # FD = 2MB; DTB header = 0x100000 (1 MB); FVMAIN_COMPACT = 0x200000 - 0x100000
+  DEFINE FVMAIN_COMPACT_SIZE  = 0x100000
 !endif
 !if $(FD_SIZE_IN_MB) == 3
-  # FD = 3MB = 0x300000; DTB header = 0x20000; FVMAIN_COMPACT = 0x300000 - 0x20000
-  DEFINE FVMAIN_COMPACT_SIZE  = 0x2e0000
+  # FD = 3MB; DTB header = 0x100000 (1 MB); FVMAIN_COMPACT = 0x300000 - 0x100000
+  DEFINE FVMAIN_COMPACT_SIZE  = 0x200000
 !endif
 
 [FD.edk2-aarch64-gzvm]
@@ -58,13 +58,13 @@ NumBlocks     = $(FD_NUM_BLOCKS)
 #
 # Implement the Linux kernel header layout so that the loader will identify
 # it as something bootable, and execute it with a FDT pointer in x0 or r2.
-# This area will be reused to store a copy of the FDT so round it up to 128 KB.
-# The previous 32 KB limit was too small for complex VM device trees.
+# This area will be reused to store a copy of the FDT so reserve 1 MB for it.
+# QEMU GZVM generates DTBs up to 1 MB for complex VM configurations.
 #
-0x00000000|0x00020000
+0x00000000|0x00100000
 DATA = {
   0x01, 0x00, 0x00, 0x10,                         # code0: adr x1, .
-  0xff, 0x7f, 0x00, 0x14,                         # code1: b 0x20000
+  0xFF, 0xFF, 0x03, 0x14,                         # code1: b 0x100000
   0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, # text_offset: 512 KB
 !if $(FD_SIZE_IN_MB) == 2
   0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, # image_size: 2 MB
@@ -80,7 +80,7 @@ DATA = {
   0x00, 0x00, 0x00, 0x00                          # res5
 }
 
-0x00020000|$(FVMAIN_COMPACT_SIZE)
+0x00100000|$(FVMAIN_COMPACT_SIZE)
 gArmTokenSpaceGuid.PcdFvBaseAddress|gArmTokenSpaceGuid.PcdFvSize
 FV = FVMAIN_COMPACT
 
