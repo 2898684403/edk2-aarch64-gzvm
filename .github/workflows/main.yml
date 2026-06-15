@@ -18,17 +18,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt update
-          sudo apt install -y build-essential uuid-dev iasl nasm git \
-          python3 python3-pip python3-venv python3-setuptools \
-          flex bison libssl-dev \
-          acpica-tools
+          sudo apt -y install python3-venv pip git mono-devel build-essential nuget build-essential uuid-dev iasl nasm gcc-aarch64-linux-gnu python3 python3-distutils python3-git python3-pip gettext locales gnupg ca-certificates python3-venv git git-core clang llvm curl jq clang llvm gcc-aarch64-linux-gnu
 
       - name: Build firmware
         working-directory: edk2-aarch64-gzvm
         run: |
-         git submodule update --init --recursive
-          source edksetup.sh
           chmod +x ./make.sh
           export TERM=linux
           ./make.sh
