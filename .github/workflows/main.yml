@@ -26,6 +26,7 @@ jobs:
         working-directory: edk2-aarch64-gzvm
         run: |
           chmod +x ./make.sh
+          export TERM=linux
           ./make.sh
 
       - name: Package build artifacts
