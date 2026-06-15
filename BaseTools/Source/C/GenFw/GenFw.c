@@ -1595,16 +1595,17 @@ Returns:
       //
       // InputFileName buffer too small, need to realloc
       //
-      InputFileName = (CHAR8 **) realloc (
+      CHAR8 **TmpFileName;
+      TmpFileName = (CHAR8 **) realloc (
         InputFileName,
         (InputFileNum + MAXIMUM_INPUT_FILE_NUM) * sizeof (CHAR8 *)
         );
 
-      if (InputFileName == NULL) {
+      if (TmpFileName == NULL) {
         Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
         goto Finish;
       }
-
+      InputFileName = TmpFileName;
       memset (&(InputFileName[InputFileNum]), 0, (MAXIMUM_INPUT_FILE_NUM * sizeof (CHAR8 *)));
     }
 

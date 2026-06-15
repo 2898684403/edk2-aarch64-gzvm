@@ -41,10 +41,10 @@ ArmVirtPL031FdtClientLibConstructor (
   if (EFI_ERROR (Status)) {
     DEBUG ((
       DEBUG_WARN,
-      "%a: No 'arm,pl031' compatible DT node found\n",
+      "%a: No 'arm,pl031' compatible DT node found — RTC unavailable\n",
       __func__
       ));
-    return EFI_SUCCESS;
+    return EFI_UNSUPPORTED;
   }
 
   Status = FdtClient->GetNodeProperty (
@@ -57,10 +57,10 @@ ArmVirtPL031FdtClientLibConstructor (
   if (EFI_ERROR (Status)) {
     DEBUG ((
       DEBUG_WARN,
-      "%a: No 'reg' property found in 'arm,pl031' compatible DT node\n",
+      "%a: No 'reg' property found in 'arm,pl031' compatible DT node — RTC unavailable\n",
       __func__
       ));
-    return EFI_SUCCESS;
+    return EFI_UNSUPPORTED;
   }
 
   ASSERT (RegSize == 16);

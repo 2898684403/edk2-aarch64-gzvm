@@ -27,6 +27,85 @@
 //
 
 /**
+  Scan the PCI capability list for a virtio 1.0 vendor-specific capability.
+
+  Lightweight check for Supported() — only verifies that at least one
+  vendor-specific capability with VIRTIO_VENDOR_ID exists, without fully
+  parsing the VIRTIO_PCI_CAP structures.
+
+  @param[in] PciIo  The EFI_PCI_IO_PROTOCOL instance for the device.
+
+  @retval TRUE   A virtio 1.0 vendor-specific capability was found.
+  @retval FALSE  No virtio 1.0 capability present (legacy-only device).
+**/
+STATIC
+BOOLEAN
+HasVirtio10Capability (
+  IN EFI_PCI_IO_PROTOCOL  *PciIo
+  )
+{
+  UINT8       CapOffset;
+  EFI_STATUS  Status;
+
+  Status = PciIo->Pci.Read (
+                        PciIo,
+                        EfiPciIoWidthUint8,
+                        0,
+                        PCI_CAPBILITY_POINTER_OFFSET,
+                        1,
+                        &CapOffset
+                        );
+  if (EFI_ERROR (Status)) {
+    return FALSE;
+  }
+
+  while (CapOffset >= 0x40) {
+    UINT8  CapId;
+    UINT16 VendorId;
+
+    Status = PciIo->Pci.Read (
+                          PciIo,
+                          EfiPciIoWidthUint8,
+                          0,
+                          CapOffset,
+                          1,
+                          &CapId
+                          );
+    if (EFI_ERROR (Status)) {
+      return FALSE;
+    }
+
+    if (CapId == EFI_PCI_CAPABILITY_ID_VENDOR) {
+      Status = PciIo->Pci.Read (
+                            PciIo,
+                            EfiPciIoWidthUint16,
+                            0,
+                            CapOffset + 2,
+                            1,
+                            &VendorId
+                            );
+      if (!EFI_ERROR (Status) && (VendorId == VIRTIO_VENDOR_ID)) {
+        return TRUE;
+      }
+    }
+
+    Status = PciIo->Pci.Read (
+                          PciIo,
+                          EfiPciIoWidthUint8,
+                          0,
+                          CapOffset + 1,
+                          1,
+                          &CapOffset
+                          );
+    if (EFI_ERROR (Status)) {
+      return FALSE;
+    }
+  }
+
+  return FALSE;
+}
+
+/**
   Transfer data between the caller and a register in a virtio-1.0 register
   block.
 
@@ -1028,18 +1107,26 @@ Virtio10BindingSupported (
       ((Pci.Hdr.Status & EFI_PCI_STATUS_CAPABILITY) != 0))
   {
     //
-    // The virtio-vga device is special. It can be driven both as a VGA device
-    // with a linear framebuffer, and through its underlying, modern,
-    // virtio-gpu-pci device, which has no linear framebuffer itself. For
-    // compatibility with guest OSes that insist on inheriting a linear
-    // framebuffer from the firmware, we should leave virtio-vga to
-    // QemuVideoDxe, and support only virtio-gpu-pci here.
+    // For transitional devices (DeviceId 0x1000-0x103F) we must verify that
+    // they actually expose VirtIo 1.0 vendor-specific capabilities before
+    // claiming them.  Legacy-only transitional devices have no such
+    // capabilities and should be handled by VirtioPciDeviceDxe instead.
     //
-    // Both virtio-vga and virtio-gpu-pci have DeviceId 0x1050, but only the
-    // former has device class PCI_CLASS_DISPLAY_VGA.
-    //
-    if ((Pci.Hdr.DeviceId != 0x1050) || !IS_PCI_VGA (&Pci)) {
-      Status = EFI_SUCCESS;
+    if ((Pci.Hdr.DeviceId >= 0x1040) || HasVirtio10Capability (PciIo)) {
+      //
+      // The virtio-vga device is special. It can be driven both as a VGA
+      // device with a linear framebuffer, and through its underlying, modern,
+      // virtio-gpu-pci device, which has no linear framebuffer itself. For
+      // compatibility with guest OSes that insist on inheriting a linear
+      // framebuffer from the firmware, we should leave virtio-vga to
+      // QemuVideoDxe, and support only virtio-gpu-pci here.
+      //
+      // Both virtio-vga and virtio-gpu-pci have DeviceId 0x1050, but only the
+      // former has device class PCI_CLASS_DISPLAY_VGA.
+      //
+      if ((Pci.Hdr.DeviceId != 0x1050) || !IS_PCI_VGA (&Pci)) {
+        Status = EFI_SUCCESS;
+      }
     }
   }
 

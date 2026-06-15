@@ -465,16 +465,16 @@ AccumulateCoffGOTEntries (
     mGOTCoffEntries = (UINT32*)malloc(5 * sizeof *mGOTCoffEntries);
     if (mGOTCoffEntries == NULL) {
       Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
+      return FALSE;
     }
-    assert (mGOTCoffEntries != NULL);
     mGOTMaxCoffEntries = 5;
     mGOTNumCoffEntries = 0;
   } else if (mGOTNumCoffEntries == mGOTMaxCoffEntries) {
     mGOTCoffEntries = (UINT32*)realloc(mGOTCoffEntries, 2 * mGOTMaxCoffEntries * sizeof *mGOTCoffEntries);
     if (mGOTCoffEntries == NULL) {
       Error (NULL, 0, 4001, "Resource", "memory cannot be allocated!");
+      return FALSE;
     }
-    assert (mGOTCoffEntries != NULL);
     mGOTMaxCoffEntries += mGOTMaxCoffEntries;
   }
   mGOTCoffEntries[mGOTNumCoffEntries++] = GOTCoffEntry;

@@ -18,7 +18,7 @@
 #include <Library/PcdLib.h>
 
 // Number of Virtual Memory Map Descriptors
-#define MAX_VIRTUAL_MEMORY_MAP_DESCRIPTORS  6
+#define MAX_VIRTUAL_MEMORY_MAP_DESCRIPTORS  7
 
 //
 // mach-virt's core peripherals such as the UART, the GIC and the RTC are
@@ -140,15 +140,25 @@ ArmVirtGetMemoryMap (
   VirtualMemoryTable[2].Length       = FixedPcdGet32 (PcdFvSize);
   VirtualMemoryTable[2].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK_RO;
 
-  // GZVM/PCI peripherals below RAM base (covers PCI MMIO 0x10000000+,
-  // PCI ECAM, flash, and other device regions not in MACH_VIRT_PERIPH)
+  // Low peripherals below the mach-virt peripheral window.
+  // This covers the GZVM MMIO trap space, early boot flash, etc.
+  // Note: this region MUST NOT overlap with MACH_VIRT_PERIPH (region [1])
+  // to avoid duplicate mappings with potentially conflicting attributes.
   VirtualMemoryTable[3].PhysicalBase = 0;
   VirtualMemoryTable[3].VirtualBase  = 0;
-  VirtualMemoryTable[3].Length       = PcdGet64 (PcdSystemMemoryBase);
+  VirtualMemoryTable[3].Length       = MACH_VIRT_PERIPH_BASE;
   VirtualMemoryTable[3].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
 
+  // GZVM/PCI peripherals below RAM base but above MACH_VIRT_PERIPH.
+  // Covers PCI MMIO 0x10000000+, PCI ECAM, flash, and other device regions.
+  VirtualMemoryTable[4].PhysicalBase = MACH_VIRT_PERIPH_BASE + MACH_VIRT_PERIPH_SIZE;
+  VirtualMemoryTable[4].VirtualBase  = VirtualMemoryTable[4].PhysicalBase;
+  VirtualMemoryTable[4].Length       = PcdGet64 (PcdSystemMemoryBase) -
+                                       (MACH_VIRT_PERIPH_BASE + MACH_VIRT_PERIPH_SIZE);
+  VirtualMemoryTable[4].Attributes   = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
+
   // End of Table
-  ZeroMem (&VirtualMemoryTable[4], sizeof (ARM_MEMORY_REGION_DESCRIPTOR));
+  ZeroMem (&VirtualMemoryTable[5], sizeof (ARM_MEMORY_REGION_DESCRIPTOR));
 
   *VirtualMemoryMap = VirtualMemoryTable;
 }

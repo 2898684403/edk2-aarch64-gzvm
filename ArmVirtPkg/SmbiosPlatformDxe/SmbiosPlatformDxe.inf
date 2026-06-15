@@ -56,4 +56,4 @@
   gFdtClientProtocolGuid                      # PROTOCOL ALWAYS_CONSUMED
 
 [Depex]
-  gEfiSmbiosProtocolGuid
+  gEfiSmbiosProtocolGuid AND gFdtClientProtocolGuid

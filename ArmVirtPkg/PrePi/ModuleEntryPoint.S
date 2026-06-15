@@ -345,8 +345,34 @@ ASM_PFX(DiscoverDramFromDt):
   // image header at the base of this image (defined in the FDF), and record the
   // pointer in PcdDeviceTreeInitialBaseAddress.
   //
+  // The slack space is 128 KB minus the 64 byte header = 0x1FFC0 bytes.
+  // Check the DTB size before copying to avoid overflowing into FVMAIN_COMPACT.
+  //
   adr   x8, PcdGet64 (PcdDeviceTreeInitialBaseAddress)
-  add   x27, x27, #0x40
+  add   x27, x27, #0x40        // dest = FD base + 0x40 (after header)
+  //
+  // Total DTB size (from FDT header at x28); the FDF allocates 0x20000 bytes
+  // for the header + DTB region (0x00000000-0x0001FFFF), of which 0x40 bytes
+  // are the Linux kernel header, leaving 0x1FFC0 for the DTB.
+  //
+  ldr   w9, [x28]              // FDT header begins with big-endian size (be32)
+  rev   w9, w9                 // convert to LE
+  ldr   w10, [x28, #4]         // FDT totalsize (be32)
+  rev   w10, w10
+  cmp   w10, #0x1FFC0
+  b.ls  20f                    // DTB fits — proceed
+  //
+  // DTB too large for the reserved slot — this is fatal.  Print an error
+  // breadcrumb and deadloop rather than silently corrupting the firmware.
+  //
+  mov   w16, #'!'
+  str   w16, [x15]
+  mov   w16, #'F'
+  str   w16, [x15]
+  mov   w16, #'\n'
+  str   w16, [x15]
+  b     _NeverReturn
+20:
   str   x27, [x8]
 
   mov   x0, x27

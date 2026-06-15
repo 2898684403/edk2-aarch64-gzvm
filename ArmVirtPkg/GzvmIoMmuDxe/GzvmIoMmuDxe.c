@@ -543,9 +543,9 @@ GzvmIoMmuDxeEntryPoint (
   // Allocate the bitmap for the page allocator.
   // Each bit represents one 4KB page.
   //
+  InitializeSpinLock (&mSharePoolLock);
   BitmapBytes = (mSharePages + 7) / 8;
   mBitmap = AllocateZeroPool (BitmapBytes);
-  InitializeSpinLock (&mSharePoolLock);
   if (mBitmap == NULL) {
     DEBUG ((DEBUG_ERROR, "GZVM-IoMmu: failed to allocate bitmap (%u bytes)\n", (UINT32)BitmapBytes));
     return EFI_OUT_OF_RESOURCES;
@@ -599,7 +599,8 @@ GzvmIoMmuDxeEntryPoint (
                     &ResvAddr
                     );
     if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_WARN, "GZVM-IoMmu: failed to reserve shared DMA pool: %r\n", Status));
+      DEBUG ((DEBUG_ERROR, "GZVM-IoMmu: failed to reserve shared DMA pool: %r\n", Status));
+      return Status;
     } else {
       DEBUG ((DEBUG_INFO, "GZVM-IoMmu: shared DMA pool reserved (%u pages)\n",
               (UINT32)mSharePages));

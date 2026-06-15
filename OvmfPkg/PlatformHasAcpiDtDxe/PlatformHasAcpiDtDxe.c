@@ -74,10 +74,6 @@ PlatformHasAcpiDt (
   return Status;
 
 Failed:
-  ASSERT_EFI_ERROR (Status);
-  CpuDeadLoop ();
-  //
-  // Keep compilers happy.
-  //
+  DEBUG ((DEBUG_ERROR, "%a: protocol installation failed: %r\n", __func__, Status));
   return Status;
 }

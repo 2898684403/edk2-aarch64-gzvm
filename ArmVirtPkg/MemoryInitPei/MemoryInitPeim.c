@@ -70,13 +70,13 @@ InitializeMemory (
   UINTN       UefiMemoryBase;
   EFI_STATUS  Status;
 
-  ASSERT (FixedPcdGet64 (PcdSystemMemoryBase) < (UINT64)MAX_ALLOC_ADDRESS);
+  ASSERT (PcdGet64 (PcdSystemMemoryBase) < (UINT64)MAX_ALLOC_ADDRESS);
 
   //
   // Put the permanent PEI memory in the first 128 MiB of DRAM so that
   // it is covered by the statically configured ID map.
   //
-  UefiMemoryBase = (UINTN)FixedPcdGet64 (PcdSystemMemoryBase) + SIZE_128MB
+  UefiMemoryBase = (UINTN)PcdGet64 (PcdSystemMemoryBase) + SIZE_128MB
                    - FixedPcdGet32 (PcdSystemMemoryUefiRegionSize);
 
   Status = PeiServicesInstallPeiMemory (
