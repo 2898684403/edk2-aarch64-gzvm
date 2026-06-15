@@ -1,0 +1,42 @@
+name: Build and Release EDK2 for AArch64 GZVM
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          repository: AnyLaySys/edk2-aarch64-gzvm
+          path: edk2-aarch64-gzvm
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential uuid-dev iasl nasm python3 git \
+            gcc-aarch64-linux-gnu python3-setuptools python3-pip python3-venv
+
+      - name: Build firmware
+        working-directory: edk2-aarch64-gzvm
+        run: |
+          chmod +x ./make
+          ./make
+
+      - name: Package build artifacts
+        working-directory: edk2-aarch64-gzvm
+        run: tar -czvf ../build.tar.gz build/
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: build.tar.gz
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
