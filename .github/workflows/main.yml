@@ -27,7 +27,7 @@ acpica-tools
       - name: Build firmware
         working-directory: edk2-aarch64-gzvm
         run: |
-          git submodule update --init --recursive
+          
           source edksetup.sh
           chmod +x ./make.sh
           export TERM=linux
