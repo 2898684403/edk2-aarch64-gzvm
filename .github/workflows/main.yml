@@ -20,8 +20,8 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y build-essential uuid-dev iasl nasm git \
-          python3 python3-pip python3-venv python3-distutils \
-          gcc-multilib flex bison libssl-dev \
+          python3 python3-pip python3-venv python3-setuptools \
+          flex bison libssl-dev \
           acpica-tools
 
       - name: Build firmware
