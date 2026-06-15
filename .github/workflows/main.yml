@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04-arm      
+    runs-on: ubuntu-22.04-arm    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -18,8 +18,8 @@ jobs:
 
       - name: Install dependencies
         run: |
+          sudo apt update && sudo apt -y upgrade
           sudo apt -y install python3-venv pip git mono-devel build-essential nuget build-essential uuid-dev iasl nasm gcc-aarch64-linux-gnu python3 python3-distutils python3-git python3-pip gettext locales gnupg ca-certificates python3-venv git git-core clang llvm curl jq clang llvm gcc-aarch64-linux-gnu
-
       - name: Build firmware
         working-directory: edk2-aarch64-gzvm
         run: |
